@@ -8,12 +8,23 @@ interface Message {
   sender: "user" | "ai";
 }
 
+export interface PlaceInfo {
+  name: string;
+  category: string;
+  address: string;
+  lat: number;
+  lng: number;
+  is_registered: boolean;
+  description: string;
+}
+
 // 챗봇이 관리할 전체 상태의 형태 정의
 interface ChatState {
   message: Message[],
   inputText: string;
   isLoading: boolean;
   showMap: boolean;
+  places: PlaceInfo[];
 }
 
 // 초기 상태값
@@ -25,7 +36,8 @@ const initialState: ChatState = {
   }],
   inputText: '',
   isLoading: false,
-  showMap: false
+  showMap: false,
+  places: []
 }
 
 export const chatSlice = createSlice({
@@ -44,6 +56,9 @@ export const chatSlice = createSlice({
     setShowMap: (state, action:PayloadAction<boolean>) => {
       state.showMap = action.payload
     },
+    setPlaces: (state, action:PayloadAction<PlaceInfo[]>) => {
+      state.places = action.payload
+    },
     // 새 메시지 추가 액션
     addMessage: (state, action:PayloadAction<Message>) => {
       state.message.push(action.payload);
@@ -51,7 +66,7 @@ export const chatSlice = createSlice({
   }
 })
 
-export const { setInputText, setIsLoading, setShowMap, addMessage } = chatSlice.actions;
+export const { setInputText, setIsLoading, setShowMap, addMessage, setPlaces } = chatSlice.actions;
 
 // 스토어 등록을 위한 리듀서 내보내기
 export default chatSlice.reducer;

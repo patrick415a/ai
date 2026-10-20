@@ -6,7 +6,6 @@
     uvicorn: 서버를 실행 시켜주는 도구
     pydantic: 프론트엔드에서 넘어온 메시지 형식이 맞는지 검사
 '''
-from urllib.request import Request
 
 from dotenv import load_dotenv
 
@@ -31,6 +30,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
 import os
+
+# ai가 보내준 json 문자열 데이터를 파이썬 딕셔너리로 변환
+import json
+
+# 리스트나 선택적 값 같은 데이터 타입을 명확히 지정하기 위해 타이핑 모듈을 가져온다
+from typing import List, Optional
+
+from pathlib import Path
 
 #
 from groq import Groq
@@ -66,8 +73,22 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str # 사용자가 입력하는 채팅 메시지를 받는 필드 str은 문자열 텍스트 타입
 
+# 다음 카카오 맵의 마커 아이콘을 찍기 위해 개별 장소의 데이터 구조를 정의
+class PlaceInfo(BaseModel):
+    name: str
+    category: str
+    address: str
+    lat: float
+    lng: float
+    is_registered: bool
+    description: str
+
 class ChatResponse(BaseModel):
     reply: str
+    # 프론트엔드가 지도를 화면에 띄울지 말지 결정하는 상태 값
+    show_map: bool = False
+    # 지도에 표시할 맛집/학원 장소들의 배열 데이터
+    places: List[PlaceInfo] = []
 
 '''
     /api/chat 경로로 post 요청이 들어왔을 때 실행 될 함수를 등록
@@ -85,8 +106,29 @@ async def chat_endpoint(request: ChatRequest):
         "분위기나 특징을 포함해 친근하고 보기 쉽게 답변해 주세요. "
         "반드시 완벽하고 자연스러운 한국어로만 답변하세요."
         "한 줄의 글자는 64글자 총 105 byte가 올 수 있으니 그 이후에는 다음줄로 넘겨 계속 작성해주세요"
-        "친절함은 계속 유지해주세요 존댓말 사용 부탁드립니다"
+        "친절함은 계속 유지해주세요 존댓말 사용 부탁드립니다\n\n"
+        "응답은 반드시 아래의 JSON 형식으로만 작성해야 합니다:\n"
+        "{\n"
+            '"reply": "사용자에게 보여줄 친절한 답변 (마크다운 문법 사용 가능)",\n'
+            '"show_map": true 또는 false (맛집, 학원, 카페, 식당, 장소 추천 등 지도가 필요한 질문이면 true, 일반 대화면 false),\n'
+            '"places": [\n'
+                "{\n"
+                    '"name": "업체명", \n'
+                    '"category": "맛집 또는 학원 등 카테고리", \n'
+                    '"address": "서울 노원구 상세 주소", \n'
+                    '"lat": 37.6551 (실제 노원구 해당 지역의 대략적인 위도 숫자), \n'
+                    '"lng": 127.0614 (실제 노원구 해당 지역의 대략적인 경도 숫자), \n'
+                    '"is_registered": true 또는 false (유명 프랜차이즈나 다음맵에 등록된 유명 업체면 true, 숨은 골목식당이나 가상의 추천/미등록 업체면 false), \n'
+                    '"description": "대표 메뉴나 학원 특징 요약" \n'
+                "}\n"
+            "]\n"
+        "}\n"
+        "주의: 일반 대화(show_map이 false일 때)인 경우 places를 빈 배열 []로 보내세요"
     )
+
+    # 에러가 발생했을 때를 대비해 기본 반환값 변수를 미리 초기화 해 둡니다
+    show_map_flag = False
+    places_list = []
 
     try:
         print(f"사용자 질문 수신: {user_message} -> Groq 초고속 응답 요청 중…")
@@ -99,21 +141,31 @@ async def chat_endpoint(request: ChatRequest):
                 # 2. 사용자의 실제 질문 전달
                 {"role": "user", "content": user_message},
             ],
-            temperature=0.6
+            temperature=0.6,
+            # json 형태로만 답하도록 설정
+            response_format={"type":"json_object"},
         )
 
         # ai가 생성한 답변 텍스트 꺼내기
-        ai_reply = chat_completion.choices[0].message.content
+        raw_content = chat_completion.choices[0].message.content
+        print("Grog 응답 완료")
 
-        print("응답 완료")
+        # [추가] AI가 보내준 JSON 문자열을 파이썬 딕셔너리 객체로 변환
+        parsed_data = json.loads(raw_content)
+
+        # 파싱된 데이터에서 답변, 지도 표시여부, 장소 목록을 안전하게 꺼내기
+        ai_reply = parsed_data.get("reply", "답변을 생성하지 못하였습니다")
+        show_map_flag = parsed_data.get("show_map", False)
+        places_list = parsed_data.get("places", [])
+
     except Exception as e:
         print(f"Groq AI 호출 중 에러 발생: {e}")
         ai_reply = "죄송합니다. 현재 AI 응답을 가져오는 중 문제가 발생했습니다. .env 파일의 GROQ_API_KEY 설정이나 서버 콘솔을 확인해 주세요."
+        show_map_flag = False
+        places_list = []
 
     # ChatResponse 객체를 생성해서 변환
-    return ChatResponse(reply=ai_reply)
-
-
+    return ChatResponse(reply=ai_reply, show_map=show_map_flag, places=places_list)
 
 # 구동 명령어 uvicorn main:app --reload
 
