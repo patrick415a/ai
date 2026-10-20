@@ -270,7 +270,7 @@ export default function Chat(){
                     : (
                     <div className='f-full flex flex-col items-center justify-center text-center text-slate-400 py-10'>
                       <div className="text-4xl ">📍</div>
-                      <p className='text-sm'></p>
+                      <p className='text-sm'>AI가 장소 좌표를 분석 중이거나 표시할 장소가 없습니다.</p>
                     </div>
                   )}
                 </div>
