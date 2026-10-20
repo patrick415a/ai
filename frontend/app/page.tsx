@@ -252,10 +252,26 @@ export default function Chat(){
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-lg shadow-sm ${place.is_registered ? 'bg-blue-100 text-blue-600 border border-blue-300' : 'bg-orange-100 text-orange-600 border border-orange-300'}`}>
                           {place.is_registered ? "🔵" : "🟠"}
                         </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className='font-bold text-slate-800 text-sm'>
+                              {place.name}
+                            </h4>
+                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${place.is_registered ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"}`}>
+                              {place.is_registered ? "다음맵 공식 등록" : "미등록 커스텀"}
+                            </span>
+                          </div>
+                          <p className='text-sx text-slate-500 mt-1'>📍 {place.address} ({place.category})</p>
+                          <p className='text-sx text-slate-700 mt-1.5'>{place.description}</p>
+                        </div>
                       </div>
                     ))
                     : (
-                    <></>
+                    <div className='f-full flex flex-col items-center justify-center text-center text-slate-400 py-10'>
+                      <div className="text-4xl ">📍</div>
+                      <p className='text-sm'></p>
+                    </div>
                   )}
                 </div>
               </div>
