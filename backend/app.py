@@ -143,7 +143,7 @@ with (chat_col if not st.session_state.show_map else chat_col):
   with chat_container:
     # 기존 대화 기록 순회 출력
     for message in st.session_state.messages:
-      with st.chat_message(message["role"], avatar="" if message["role"] == "assistant" else "👤"):
+      with st.chat_message(message["role"], avatar="🤖" if message["role"] == "assistant" else "👤"):
         st.markdown(message["content"])
   # 하단 입력 폼 (텍스트 입력 및 전송 버튼)
   with st.form(key="chat_form", clear_on_submit=True):
