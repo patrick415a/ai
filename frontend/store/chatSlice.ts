@@ -25,6 +25,8 @@ interface ChatState {
   isLoading: boolean;
   showMap: boolean;
   places: PlaceInfo[];
+  mobileView: "chat" | "map";
+  selectedDistrict: string;
 }
 
 // 초기 상태값
@@ -37,7 +39,9 @@ const initialState: ChatState = {
   inputText: '',
   isLoading: false,
   showMap: false,
-  places: []
+  places: [],
+  mobileView: "chat",
+  selectedDistrict: "노원구"
 }
 
 export const chatSlice = createSlice({
@@ -59,6 +63,12 @@ export const chatSlice = createSlice({
     setPlaces: (state, action:PayloadAction<PlaceInfo[]>) => {
       state.places = action.payload
     },
+    setMobileView: (state, action:PayloadAction<"chat" | "map">) => {
+      state.mobileView = action.payload
+    },
+    setSelectedDistrict: (state, action:PayloadAction<string>) => {
+      state.selectedDistrict = action.payload
+    },
     // 새 메시지 추가 액션
     addMessage: (state, action:PayloadAction<Message>) => {
       state.message.push(action.payload);
@@ -66,7 +76,7 @@ export const chatSlice = createSlice({
   }
 })
 
-export const { setInputText, setIsLoading, setShowMap, addMessage, setPlaces } = chatSlice.actions;
+export const { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setMobileView, setSelectedDistrict } = chatSlice.actions;
 
 // 스토어 등록을 위한 리듀서 내보내기
 export default chatSlice.reducer;
