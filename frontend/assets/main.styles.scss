@@ -1,0 +1,501 @@
+html, body {
+  margin: 0;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: #fcfefd;
+  color: #192539;
+  font-family: 'Suit', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.d-none {
+  display: none !important;
+}
+
+#wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+header {
+  height: 62px;
+  border-bottom: none;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  flex-shrink: 0;
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.5px;
+    font-weight: 700;
+    line-height: 1;
+    color: #087a4e;
+
+    img {
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .area {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-radius: 37px;
+    background-color: #f5fff1;
+    gap: 4px;
+    border: 1px solid #e2ede6;
+    color: #144a3c;
+    line-height: 1;
+    font-weight: 500;
+    white-space: nowrap;
+
+    .map-icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    svg {
+      color: #144a3c;
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .city {
+      position: relative;
+      width: 108px;
+
+      svg {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+
+      select {
+        width: 100%;
+        height: 32px;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        font-weight: 600;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+section {
+  flex-grow: 1;
+  padding: 16px;
+  padding-top: 0;
+  height: calc(100% - 62px);
+
+  display: flex;
+}
+
+// article 영역
+article {
+  flex-grow: 1;
+  height: 100%;
+}
+
+// chat 영역
+.chat {
+  width: 44%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 64px;
+
+  .banner {
+    overflow: hidden;
+    height: 262px;
+    border-radius: 16px;
+    position: relative;
+    margin-bottom: 36px;
+
+    img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 91% center;
+
+      top: 0;
+      right: 0;
+    }
+
+    .copy {
+      position: absolute;
+      left: 6.94006309148265%;
+      top: 52px;
+
+      h1 {
+        font-size: 38px;
+        font-weight: 600;
+        line-height: 1.35;
+        letter-spacing: -1.5px;
+        margin-bottom: 20px;
+
+        strong {
+          color: #087a4e;
+          font-weight: 700;
+        }
+      }
+
+      p {
+        color: #465468;
+        line-height: 1.7;
+      }
+    }
+
+    &.on {
+      .copy {
+        h1 {
+          font-size: 20px;
+        }
+
+        p {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  .message {
+    flex-grow: 1;
+    position: relative;
+
+    overflow-y: scroll;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chat-result {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 36px;
+
+      &.user {
+        justify-content: flex-end;
+        align-items: flex-end;
+
+        .chat-icon {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+
+          svg {
+            width: 20px;
+            height: 20px;
+            stroke: #627087;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+          }
+        }
+
+        .chat-bubble {
+          background-color: #e9f8e5;
+          border-radius: 16px 16px 4px 16px;
+        }
+      }
+
+      &.ai {
+        justify-content: flex-start;
+        align-items: flex-start;
+
+        .chat-icon {
+          border: none;
+        }
+
+        .chat-bubble {
+          background-color: #f2f5f8;
+          border-radius: 4px 16px 16px 16px;
+        }
+      }
+    }
+
+    .chat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background-color: #f0f3f6;
+      border: 1px solid #e9eef1;
+      flex-shrink: 0;
+    }
+
+    .chat-bubble {
+      padding: 16px;
+      max-width: 80%;
+      line-height: 2;
+      font-weight: 500;
+    }
+
+    .empty-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 36px;
+
+      img {
+        width: 92px;
+        height: 92px; 
+        border: 4px solid #eff8e9;
+        border-radius: 50%;
+      }
+
+      h3 {
+        font-size: 24px;
+        text-align: center;
+        line-height: 1.4;
+        margin-top: 16px;
+        font-weight: 600;
+
+        strong {
+          font-weight: 700;
+          color: #087a4e;
+        }
+      }
+
+      p {
+        margin-top: 12px;
+        color: #7a8798;
+        line-height: 1.7;
+        text-align: center;
+      }
+
+      .help-button {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 20px;
+
+        button {
+          cursor: pointer;
+          padding: 16px 20px;
+          border: 1px solid #e5eae9;
+          background-color: #fff;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          svg {
+            width: 18px;
+            height: 18px;
+            stroke: #168a5c;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+          }
+        }
+      }
+    }
+  }
+
+  .submit-form {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%);
+    width: 100%;
+    height: 48px;
+    border: 1px solid #e4e9ec;
+    border-radius: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 0 8px;
+    
+    input {
+      flex-grow: 1;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      border: none;
+      background-color: transparent;
+      padding-left: 16px;
+    }
+
+    button {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background-color: #014a39;
+      color: #fff;
+      border-radius: 50%;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+
+      svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    }
+  }
+}
+
+// 미디어쿼리 영역
+@media (max-width: 768px){
+  header {
+    display: flex;
+    border-bottom: 1px solid #f0f2f2;
+  }
+
+  .chat {
+    .banner {
+      height: 202px;
+
+      .copy {
+        h1 {
+          font-size: 20px;
+        }
+
+        p {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  section {
+    padding-top: 16px;
+  }
+
+  .chat {
+    .message {
+      .empty-text {
+        img {
+          width: 68px;
+          height: 68px; 
+        }
+
+        h3 {
+          font-size: 20px;
+        }
+
+        p {
+          font-size: 12px;
+        }
+
+        .help-button {
+          flex-direction: column;
+
+          button {
+            justify-content: center;
+            width: 160px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 폰트 불러오기
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
