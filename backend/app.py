@@ -13,7 +13,7 @@ st.markdown("""
 <!-- 부트스트랩5 폰트어썸 6 cdn -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-<style>
+  <style>
     header[data-testid="stHeader"]{
       background: transparent !important;
     }
@@ -23,7 +23,7 @@ st.markdown("""
       padding-bottom: 2rem !important;
       max-width: 1360px !important;
     }
-
+  
     /* 전체 배경 및 폰트 컬러 통일 */ 
     .stApp {
       background: linear-gradient(135deg, #0a0e17 0%, #111827 50%, #0d111a 100%);
@@ -70,64 +70,84 @@ st.markdown("""
     div[data-baseweb="select"] svg {
       fill: #fde047 !important;
     }
-
-    /* 상단 헤더 글래스모피즘 박스 */
-    .custom-header {
-      background: rgba(23, 34, 59, 0.6);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    
+    data[data-baseweb="popover"] ul {
+      background-color: #131b2e !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 0.75rem !important;
     }
-
-    /* 토스트 형태의 장소 카드 스타일 */
-    .place-card {
-      background: rgba(23, 34, 59, 0.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
+    
+    data[data-baseweb="popover"] li {
+      color: #f8fafc !important;
     }
-    .place-card:hover {
-      background: rgba(23, 34, 59, 0.9);
+    
+    data[data-baseweb="popover"] li:hover {
+      background-color: #1e2c4f !important;
+      color: #fde047 !important;
     }
-
-    /* 전송 버튼을 노란색/크림 계열로 커스텀 */
-    .stButton button {
-      background-color: #fde047 !important;
-      color: #0d111a !important;
-      font-weight: bold !important;
-      border-radius: 16px !important;
+    
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+      background-color: rgba(15, 23, 42, 0.6) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      padding: 1.25rem !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35) !important;
+    }
+    
+    div[data-testid="stForm"] {
       border: none !important;
-      padding: 0.6rem 1.2rem !important;
-      box-shadow: 0 4px 12px rgba(253, 224, 71, 0.2);
-      transition: all 0.2s ease;
+      padding: 0 !important;
+      margin-top: 12px !important;
+      background: transparent !important;
     }
-    .stButton button:hover {
-      background-color: #facc15 !important;
+    
+    div[data-baseweb="input"] {
+      background-color: #131b2e !important;
+      border: 1px solid rgba(255,255,255,0.15) !important;
+      border-radius: 1rem !important;
+      height: 50px !important;
+      padding: 0 18px !important;
+      display: flex !important;
+      align-items: center !important;
+      box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.25) !important;
     }
-
-    /* 입력창(Text Input) 글래스모피즘 적용 */
-    .stTextInput input {
-      background-color: rgba(13, 17, 26, 0.8) !important;
-      color: #e2e8f0 !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      border-radius: 16px !important;
-      padding: 12px !important;
-    }
-    .stTextInput input:focus {
+    
+    div[data-baseweb="input"]:focus-within {
       border-color: #fde047 !important;
-      box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.2) !important;
+      box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.25) !important; 
     }
-    </style>
+    
+    div[data-baseweb="base-input"] {
+      background-color: transparent !important;
+    }
+    
+    div[data-baseweb="input"] input {
+      background-color: transparent !important;
+      color: #fff !important;
+      font-size: 14px !important;
+      height: 50px !important;
+      padding: 0 !important;
+    }
+    
+    div[data-baseweb="input"] input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 1 !important;
+    }
+    
+    div[data-testid="stFormSubmitButton"] button,
+    div.stButton > button {
+      width: 100% !important;
+      background-color: #fde047 !important;
+      border: none !important;
+      border-radius: 1rem !important;
+      height: 50px !important;
+      min-height: 50px !important;
+      display: flex !important;
+      align-items: center !important;
+      box-shadow: 0 4px 14px rgba(254, 224, 71, 0.3) !important;
+      transition: all 0.2s ease !important;
+    }
+  </style>
 """, unsafe_allow_html=True)
 
 # 3. 세션상태 초기화
