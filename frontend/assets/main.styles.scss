@@ -18,20 +18,25 @@ body {
   display: none !important;
 }
 
-#wrap {
+.chat-page {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
   width: 100%;
-  height: 100%;
+  // vh: 모바일 주소창 등이 숨겨졌을 때의 큰 뷰포트 높이를 기준으로 한다.
+  // dvh(dynamic viewport height): 주소창이 나타나거나 사라질 때 높이가 함께 변한다.
+  // 100은 기준 높이의 100%라는 뜻. dvh 미지원 브라우저는 위의 100vh를 사용한다.
+  // 바깥 높이를 제한해야 메시지가 길어져도 페이지 전체가 계속 늘어나지 않는다.
+  height: 100vh;
+  height: 100dvh;
   max-width: 1300px;
   margin: 0 auto;
+  overflow: hidden;
 }
 
-header {
+.chat-page > header {
   height: 62px;
   border-bottom: none;
-  background-color: #fff;
+  // background-color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -50,6 +55,50 @@ header {
     img {
       width: 28px;
       height: 28px;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .map-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid #e2ede6;
+    border-radius: 30px;
+    background-color: #fff;
+    color: #607084;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &.on {
+      background-color: #f5fff1;
+      color: #144a3c;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
   }
 
@@ -79,7 +128,7 @@ header {
       width: 18px;
       height: 18px;
       stroke: currentColor;
-      stroke-width: 2;
+      stroke-width: 1.8;
       fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -87,7 +136,7 @@ header {
 
     .city {
       position: relative;
-      width: 108px;
+      width: 92px;
 
       svg {
         position: absolute;
@@ -107,33 +156,44 @@ header {
         outline: none;
         appearance: none;
         cursor: pointer;
+        font-size: 12px;
       }
     }
   }
 }
 
-section {
-  flex-grow: 1;
+.chat-layout {
+  // 헤더를 제외한 남은 세로 공간을 차지하므로 높이를 calc()로 계산할 필요가 없다.
+  flex: 1;
+  // Flex 자식의 기본 최소 높이(auto)는 내용 때문에 줄어들지 않을 수 있다.
+  // 0으로 풀어줘야 안쪽 메시지 영역이 제한된 높이 안에서 스크롤될 수 있다.
+  min-height: 0;
+  min-width: 0;
   padding: 16px;
   padding-top: 0;
-  height: calc(100% - 62px);
 
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 100fr) minmax(0, 0fr);
+  grid-template-rows: minmax(0, 1fr);
+  transition: grid-template-columns 320ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.map-open {
+    grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+  }
 }
 
 // article 영역
-article {
-  flex-grow: 1;
-  height: 100%;
+.chat-layout > article {
+  min-height: 0;
+  min-width: 0;
 }
 
 // chat 영역
-.chat {
-  width: 44%;
+.chat-page .chat {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  position: relative;
-  padding-bottom: 64px;
+  gap: 16px;
 
   .banner {
     overflow: hidden;
@@ -176,8 +236,10 @@ article {
         line-height: 1.7;
       }
     }
+  }
 
-    &.on {
+  &.on {
+    .banner {
       .copy {
         h1 {
           font-size: 20px;
@@ -191,10 +253,19 @@ article {
   }
 
   .message {
-    flex-grow: 1;
+    // 입력창과 gap을 제외한 남은 높이를 메시지 목록이 사용한다.
+    flex: 1;
+    // 내용이 길어져도 목록 자체가 늘어나는 대신 안에서 스크롤되도록 한다.
+    min-height: 0;
+    min-width: 0;
     position: relative;
 
-    overflow-y: scroll;
+    // 내용이 영역 높이를 넘을 때만 세로 스크롤을 허용한다.
+    overflow-y: auto;
+    // 스크롤의 위/아래 끝에서 계속 스크롤해도 바깥 페이지로 동작이 이어지지 않게 한다.
+    // auto: 바깥으로 이어질 수 있음 / contain: 이어짐 차단 / none: 이어짐과 끝의 튕김 효과도 차단.
+    // 스크롤을 만드는 속성은 overflow-y이고, 이 속성은 끝에 도달했을 때의 동작을 제어한다.
+    overscroll-behavior-y: contain;
 
     &::-webkit-scrollbar {
       display: none;
@@ -263,7 +334,15 @@ article {
       font-weight: 500;
     }
 
-    .empty-text {
+    .loading-dots {
+      display: inline-block;
+      font-family: inherit;
+      // 본문의 SUIT를 그대로 사용하고, 세 점의 실제 너비를 확보한 채 일부만 보여준다.
+      width: max-content;
+      animation: chat-loading-dots 1.2s step-end infinite;
+    }
+
+    .chat-welcome {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -328,10 +407,9 @@ article {
   }
 
   .submit-form {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translate(-50%);
+    // 입력창은 스크롤되는 .message의 형제이므로 목록을 스크롤해도 하단에 계속 보인다.
+    // flex-shrink: 0은 세로 공간이 부족해도 입력창 높이(48px)가 압축되지 않게 한다.
+    flex-shrink: 0;
     width: 100%;
     height: 48px;
     border: 1px solid #e4e9ec;
@@ -343,8 +421,8 @@ article {
     padding: 0 8px;
     
     input {
-      flex-grow: 1;
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       height: 100%;
       outline: none;
       border: none;
@@ -376,18 +454,339 @@ article {
         stroke-linecap: round;
         stroke-linejoin: round;
       }
+
+      &:disabled {
+        opacity: 0.5;
+      }
     }
+  }
+
+  .mobile-map-button {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 14px;
+    padding: 8px 12px;
+    border: 1px solid #d6e6d9;
+    border-radius: 10px;
+    background-color: #fff;
+    color: #087a4e;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  }
+}
+
+// map 관련
+.chat-page .map-panel {
+  // PC 패널 간격과 지도 높이는 이곳에서 조절한다.
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(40px);
+  // 숨길 때도 즉시 제거하지 않고, 오른쪽으로 빠져나가는 동작을 끝낸다.
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    padding-left 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 320ms;
+  // border-left: 1px solid #edf0ed;
+
+  &.on {
+    padding-left: 24px;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition-delay: 0s;
+  }
+
+  .map-panel-icon {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .map-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+
+      .map-panel-icon {
+        color: #087a4e;
+      }
+    }
+  }
+
+  .map-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid #e4e9ec;
+    border-radius: 50%;
+    background-color: #fff;
+    color: #627087;
+    cursor: pointer;
+
+    .map-panel-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .map-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-right: 3px;
+    // 스크롤 동작은 유지하고 스크롤바만 숨긴다.
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 13px;
+    margin-bottom: 12px;
+    border: 1px solid #e8eeea;
+    border-radius: 10px;
+    background-color: #f8fbf9;
+    color: #607084;
+    font-size: 12px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #3c82e6;
+
+      &.unregistered {
+        background-color: #ef9250;
+      }
+    }
+  }
+
+  .map-canvas {
+    height: 240px;
+    overflow: hidden;
+    border: 1px solid #e2e9e4;
+    border-radius: 14px;
+    background-color: #f1f3f4;
+  }
+
+  .results-heading {
+    display: flex;
+    align-items: center;
+    margin: 19px 0 11px;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+  }
+
+  .result-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 20px;
+    background-color: #eaf7ec;
+    color: #087a4e;
+    font-size: 10px;
+  }
+
+  .place-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .place-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 14px;
+    border: 1px solid #e4e9ec;
+    border-radius: 13px;
+    background-color: #fff;
+  }
+
+  .place-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background-color: #edf3ff;
+    color: #3d7dd7;
+    font-size: 13px;
+    font-weight: 700;
+
+    &.unregistered {
+      background-color: #fff1e8;
+      color: #da8b4b;
+    }
+  }
+
+  .place-info {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .place-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 1px 0 5px;
+
+    h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.1px;
+    }
+  }
+
+  .place-badge {
+    flex-shrink: 0;
+    padding: 4px 7px;
+    border-radius: 20px;
+    background-color: #edf3ff;
+    color: #4a82ce;
+    font-size: 12px;
+    font-weight: 600;
+
+    &.unregistered {
+      background-color: #fff1e5;
+      color: #b9793f;
+    }
+  }
+
+  .place-address {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    color: #8390a0;
+    font-size: 13px;
+    line-height: 1.5;
+
+    .map-panel-icon {
+      width: 12px;
+      height: 12px;
+      margin-top: 1px;
+    }
+  }
+
+  .place-description {
+    margin: 9px 0 0;
+    padding: 7px 9px;
+    border-radius: 8px;
+    background-color: #f4f7f8;
+    color: #526071;
+    font-size: 13px;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .places-empty {
+    margin: 0;
+    padding: 20px 0;
+    color: #8390a0;
+    font-size: 12px;
+  }
+}
+
+// 0.4초마다 한 점씩 더 보여주고, 세 점 다음에는 다시 한 점으로 돌아간다.
+@keyframes chat-loading-dots {
+  0%, 100% { clip-path: inset(0 66.6667% 0 0); }
+  33.3333% { clip-path: inset(0 33.3333% 0 0); }
+  66.6667% { clip-path: inset(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-layout,
+  .chat-page .map-panel {
+    transition: none;
+  }
+
+  .chat-page .loading-dots {
+    animation: none;
   }
 }
 
 // 미디어쿼리 영역
 @media (max-width: 768px){
-  header {
+  .chat-page > header {
     display: flex;
     border-bottom: 1px solid #f0f2f2;
   }
 
-  .chat {
+  .chat-page .chat {
     .banner {
       height: 202px;
 
@@ -403,13 +802,13 @@ article {
     }
   }
 
-  section {
+  .chat-layout {
     padding-top: 16px;
   }
 
-  .chat {
+  .chat-page .chat {
     .message {
-      .empty-text {
+      .chat-welcome {
         img {
           width: 68px;
           height: 68px; 
@@ -428,11 +827,78 @@ article {
 
           button {
             justify-content: center;
-            width: 160px;
+            width: 180px;
           }
         }
       }
     }
+  }
+}
+
+// 태블릿 폭부터는 채팅을 좁히지 않고, 헤더 아래 공간에 지도를 겹쳐 표시한다.
+@media (max-width: 1024px) {
+  .chat-layout {
+    position: relative;
+    isolation: isolate;
+
+    &,
+    &.map-open {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .chat-page .chat {
+    width: 100%;
+
+    .mobile-map-button {
+      display: flex;
+      width: fit-content;
+    }
+
+    &.on {
+      // 대화와 스크롤 위치는 유지하면서 가려진 입력창의 조작도 막는다.
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .banner {
+      // 문구가 줄바꿈되면 배너도 함께 늘어나도록 고정 높이를 해제한다.
+      height: auto;
+      min-height: 202px;
+
+      .copy {
+        position: relative;
+        top: auto;
+        left: auto;
+        padding: 28px 7%;
+
+        h1 {
+          font-size: 20px;
+          letter-spacing: -0.5px;
+        }
+
+        p {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  .chat-page .map-panel,
+  .chat-page .map-panel.on {
+    // .chat-layout을 기준으로 덮기 때문에 헤더 높이를 따로 계산하지 않는다.
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: auto;
+    margin: 0;
+    padding: 16px;
+    border: none;
+    background-color: #fcfefd;
+  }
+
+  .chat-page .map-panel:not(.on) {
+    transform: translateX(100%);
   }
 }
 

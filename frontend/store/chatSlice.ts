@@ -30,12 +30,16 @@ interface ChatState {
 }
 
 // 초기 상태값
-const initialState: ChatState = {
-  message: [{
+/*
+  message 초기 상태 주석 처리
+  {
     id: 1,
     text: "안녕하세요! 노원구 맛집이나 학원을 물어보세요.AI 어시스턴트입니다!",
     sender: "ai",
-  }],
+  }
+*/
+const initialState: ChatState = {
+  message: [],
   inputText: '',
   isLoading: false,
   showMap: false,
