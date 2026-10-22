@@ -170,7 +170,7 @@ async def chat_endpoint(request: ChatRequest):
 # 구동 명령어 uvicorn main:app --reload
 
 # source .venv/bin/activate
-# uvicorn main:app —reload —port 8000
+# uvicorn main:app --reload --port 8000
 
 # pip install openai langchain langchain-openai python-dotenv
 
