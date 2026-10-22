@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/page-original.backup", "app/page-backup.backup"  ],
   "exclude": ["node_modules"]
 }
