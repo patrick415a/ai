@@ -267,7 +267,7 @@ export default function Chat(){
                     <img src="/avatar.png" alt="ai" />
                   </div>
                   <div className='chat-bubble' role="status">
-                    최적의 장소 분석 중<span className="loading-dots" aria-hidden="true">...</span>
+                    답변 작성 중<span className="loading-dots" aria-hidden="true">...</span>
                   </div>
                 </div>
               )}
