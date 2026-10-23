@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setMobileView, setSelectedDistrict } from '@/store/chatSlice';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks'; // 줄바꿈 해주는 라이브러리
 import '@/assets/main.styles.scss'
 
 // 무조건 시간 관련된 건 템포럴로
@@ -75,7 +76,7 @@ export default function Chat(){
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({message: userQuery})
+          body: JSON.stringify({message: userQuery, district: selectedDistrict})
         });
 
         if(!response.ok) throw new Error('서버 에러가 발생하였습니다');
@@ -230,7 +231,7 @@ export default function Chat(){
                     )}
 
                     <div className='chat-bubble'>
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{msg.text.replace(/\\n/g, '\n')}</ReactMarkdown>
                       {/* 지도 이력은 저장하지 않고, 현재 장소 데이터가 있는 마지막 답변에만 표시한다. */}
                       {msg.sender === 'ai' && msg.id === message[message.length - 1]?.id && hasMapData && !isLoading && (
                         <button

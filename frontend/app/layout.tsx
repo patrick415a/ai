@@ -13,8 +13,8 @@ import ReduxProvider from "@/store/provider";
 const inter = Inter({ subsets:["latin"] });
 
 export const metadata: Metadata = {
-  title: "노원구 맛집 AI 에이전트",
-  description: "당신의 완벽한 시사를 위한 AI 비서"
+  title: "누비니",
+  description: "길잡이 AI 비서"
 };
 
 export default function RootLayout({
@@ -28,8 +28,8 @@ export default function RootLayout({
       html className="h-full"
       body className="h-full m-0 bg-gray-50 text-gray-900 antialiased"
     */
-    <html lang="ko" className="h-full">
-      <body className="h-full m-0 bg-gray-50 text-gray-900 antialiased">
+    <html lang="ko">
+      <body>
         <ReduxProvider>
         {/* <div className="wallpaper">
           <div className="wallpaper-circle circle-right"></div>
