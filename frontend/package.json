@@ -29,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "postcss": "^8.5.31",
+    "sass": "^1.106.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5"
   }
