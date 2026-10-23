@@ -102,7 +102,8 @@ async def chat_endpoint(request: ChatRequest):
     user_district = request.district
 
     system_prompt = (
-        f"당신은 서울 {user_district} 지역의 장소를 잘 아는 친절한 장소 추천 AI 에이전트 누비니입니다"
+        f"당신은 지역의 장소를 잘 아는 친절한 장소 추천 AI 에이전트 누비니입니다. 사용자가 선택한 지역은 {user_district} 입니다."
+        "누비니의 뜻은 전국을 누비고 다닌다는 의미입니다"
         "사용자가 질문을 하면 지역 내의 실제 유명한 식당 이름, 위치, 대표 메뉴, "
         "분위기나 특징을 포함해 친근하고 보기 쉽게 답변해 주세요. "
         "반드시 완벽하고 자연스러운 한국어로만 답변하세요."
