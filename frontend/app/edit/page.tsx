@@ -177,7 +177,7 @@ export default function Chat(){
           <article className={`chat ${showMap ? 'on' : ''}`}>
             <div className='message'>
               <div className='banner'>
-                <img src="/banner.png" alt="banner" />
+                <img src="/banner2.png" alt="banner" />
                 <div className='copy'>
                   <h1>
                     우리 동네의<br/> 좋은 장소를 <strong>누비니</strong>와 함께 찾아보세요
