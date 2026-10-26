@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+from jinja2 import Environment, FileSystemLoader
 
 st.set_page_config(
   page_title="AI",
@@ -7,6 +8,14 @@ st.set_page_config(
   layout="wide",
   initial_sidebar_state="collapsed"
 )
+
+#mvc 패턴 html 분리
+env = Environment(loader=FileSystemLoader("templates"))
+
+#템플릿 파일을 읽고 주입하는 헬퍼함수
+def render_template(template_name, **context):
+  template = env.get_template(template_name)
+  return template.render(**context)
 
 def load_css(file_path):
   with open(file_path, "r", encoding="utf-8") as f:
@@ -40,20 +49,8 @@ if "places" not in st.session_state:
 col_logo, col_sel, col_stat = st.columns([3.4, 1.1, 1.3], gap="small", vertical_alignment="center")
 
 with col_logo:
-  st.markdown("""
-    <div class="d-flex align-items-center gap-3">
-      <div class="d-flex align-items-center justify-content-center rounded-4 shadow-sm logoSize">
-        <i class="fa-solid fa-robot"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <div class="d-flex align-items-baseline gap-2 m-0">
-          <span class="text-warning aiText">AI</span>
-          <span class="fw-bold text-white localText">로컬 어시스턴트</span>
-        </div>
-        <span class="text-secondary">지역 맞춤형 맛집 및 학원 추천</span>
-      </div>
-    </div>    
-  """, unsafe_allow_html=True)
+  header_html = render_template("header.html")
+  st.markdown(header_html, unsafe_allow_html=True)
 
 with col_sel:
   districts = ["노원구", "도봉구", "강북구", "중랑구", "성북구"]
@@ -67,15 +64,8 @@ with col_sel:
 
 
 with col_stat:
-  if st.session_state.show_map:
-    badge_html = '<i class="fa-solid fa-map me-2"></i><span>지도 연동 활성화</span>'
-  else:
-    badge_html = '<i class="fa-solid fa-comments me-2"></i><span>AI 대화 모드</span>'
-  st.markdown(f"""
-    <div class="bs-glass-box d-flex align-items-center justify-content-center px-3 fw-bold">
-      {badge_html}
-    </div>
-  """, unsafe_allow_html=True)
+  badge_html = render_template("status_badge.html", show_map=st.session_state.show_map)
+  st.markdown(badge_html, unsafe_allow_html=True)
 
 st.markdown("<hr class='my-3 border-secondary opacity-25' />",
             unsafe_allow_html=True)
@@ -92,28 +82,8 @@ with (chat_col if not st.session_state.show_map else chat_col):
   with chat_container:
     # 기존 대화 기록 순회 출력
     for message in st.session_state.messages:
-      if message["role"] == "assistant":
-        st.markdown(f"""
-          <div class="d-flex align-items-end gap-2 mb-3 justify-content-start">
-            <div class="d-flex align-items-center justify-content-center rounded-3 shadow-sm p-2 border border-white">
-              <i class="fa-solid fa-robot fs15"></i>
-            </div>
-            <div class="bs-chat-bubble-ai mw82">
-              {message["content"]}
-            </div>
-          </div>
-        """, unsafe_allow_html=True)
-      else:
-        st.markdown(f"""
-          <div class="d-flex align-items-end gap-2 mb-3 justify-content-end">
-            <div class="bs-chat-bubble-user mw82">
-              {message["content"]}
-            </div>
-            <div class="d-flex align-items-center justify-content-center rounded-3 shadow-sm p-2 border border-white">
-              <i class="fa-solid fa-user fs15"></i>
-            </div>
-          </div>
-        """, unsafe_allow_html=True)
+        bubble_html = render_template("chat_bubble.html", role=message["role"], content=message["content"])
+        st.markdown(bubble_html, unsafe_allow_html=True)
   # 하단 입력 폼 (텍스트 입력 및 전송 버튼)
   with st.form(key="chat_form", clear_on_submit=True):
     f_col1, f_col2 = st.columns([5.2, 1], gap="small", vertical_alignment="center")
@@ -169,25 +139,8 @@ if st.session_state.show_map:
   with map_col:
     map_container = st.container(height=480, border=True)
     with map_container:
-      st.markdown(f"""
-        <div class="d-flex flex-column justify-content-between align-items-center p-3 mb-3 rounded-4 mapCard"> 
-          <div class="d-flex align-items-center gap-2 fw-bold text-white fs13">
-            <div style="background: rgba(15, 23, 42, 0.8); padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: bold; color: #fff; border: 1px solid rgba(255,255,255,0.1);">
-              <span class="text-info fw-semibold">
-                <i class="fa-solid fa-circle me-1 fs8"></i> AI 추천
-              </span>
-              <span>{st.session_state.selected_district} 추천 장소 지도</span>
-            </div>
-          </div>  
-    
-          <div class="d-flex flex-column align-items-center justify-content-center py-3 mb-3 rounded-4 bgRadial">
-            <i class="fa-solid fa-map-location-dot text-primary mb-2 fs28"></i>
-            <div class="">
-              <span class="font-monospace text-info fs11">[ Kakao Map Interactive Layer Active ]</span>
-            </div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+      map_header_html = render_template("map_header.html", district=st.session_state.selected_district)
+      st.markdown(map_header_html, unsafe_allow_html=True)
     # 지도 닫기 버튼
     if st.button("지도 닫기 X", key="close_map_btn"):
       st.session_state.show_map = False
@@ -200,25 +153,12 @@ if st.session_state.show_map:
 
     if st.session_state.places:
       for place in st.session_state.places:
-        badge_color = "#3b82f6" if place["is_registered"] else "#fde047"
+        badge_bg = "rgba(255,255,255,0.15)"
+        badge_color = "#60a5fa" if place["is_registered"] else "#fde047"
         badge_text = "공식 등록" if place["is_registered"] else "커스텀 추천"
 
-        st.markdown(f"""
-          <div class="place-card">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                  <h4 style="margin: 0; font-size: 14px; font-weight: bold; color: #ffffff;">{place['name']}</h4>
-                  <span style="font-size: 10px; padding: 2px 8px; border-radius: 8px; background: rgba({'59, 130, 246' if place['is_registered'] else '253, 224, 71'}, 0.2); color: {badge_color}; font-weight: 600; border: 1px solid rgba(255,255,255,0.05);">
-                      {badge_text}
-                  </span>
-              </div>
-              <p style="margin: 0 0 6px 0; font-size: 11px; color: #94a3b8;">
-                  📍 {place['address']} ({place['category']})
-              </p>
-              <div style="background: rgba(13, 17, 26, 0.6); padding: 8px 12px; border-radius: 10px; font-size: 11px; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.03);">
-                  {place['description']}
-              </div>
-          </div>
-        """, unsafe_allow_html=True)
+        card_html = render_template("place_card.html", badge_bg=badge_color, badge=badge_text, badge_color=badge_color, place=place)
+        st.markdown(card_html, unsafe_allow_html=True)
     else:
       st.markdown("""
         <div style="background: rgba(19, 27, 46, 0.8); backdrop-filter: blur(8px); border-radius: 12px; padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; border: 1px solid rgba(255,255,255,0.05);">
