@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, Fragment } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setMobileView, setSelectedDistrict } from '@/store/chatSlice';
 import ReactMarkdown from 'react-markdown';
-import { FaRobot, FaMapMarkerAlt, FaMap, FaTimes } from "react-icons/fa";
+import remarkBreaks from 'remark-breaks'; // 줄바꿈 해주는 라이브러리
+import '@/assets/main.styles.scss'
 
 // 무조건 시간 관련된 건 템포럴로
 import { Temporal } from '@js-temporal/polyfill';
@@ -16,6 +17,9 @@ export default function Chat(){
 
   // redux 스토어의 상태(state)를 안전하게 구독(select)하여 가져오기
   const { message, inputText, isLoading, showMap, places, mobileView, selectedDistrict } = useSelector((state:RootState) => state.chat);
+
+  // showMap은 패널의 열림 여부, places는 다시 열어 보여줄 데이터가 있는지를 나타낸다.
+  const hasMapData = places.length > 0;
 
   const messagesEndref = useRef<HTMLDivElement>(null);
 
@@ -32,9 +36,11 @@ export default function Chat(){
   }, [showMap, dispatch]);
 
   // [useCallback 훅] 사용자가 전송 버튼을 눌렀거나 엔터키를 칠 때 실행되는 비동기 전송 함수 불필요한 함수 재생성 방지
-  const handleSend = useCallback(async () => {
-    if(!inputText.trim()) return;
-    const userQuery = inputText;
+  // 추천 버튼은 문구를 직접 전달하고, 인수가 없으면 현재 입력창 값을 전송한다.
+  // dispatch 직후에도 현재 렌더링의 inputText는 이전 값이므로 전송할 문구를 인수로 받는다.
+  const handleSend = useCallback(async (text: string = inputText) => {
+    if(!text.trim() || isLoading) return;
+    const userQuery = text;
     const userMsgId = Temporal.Now.instant().epochMilliseconds;
 
     // 템포럴일 땐 다른 패턴으로 들어간다
@@ -62,7 +68,7 @@ export default function Chat(){
       lowerQuery.includes("근처");
 
       // 장소 관련 질문이면 지도 창을 활성화 하고 아니면 숨김
-      dispatch(setShowMap(isLocationQuery));
+      // dispatch(setShowMap(isLocationQuery));
 
       try {
         const response = await fetch('http://localhost:8000/api/chat', {
@@ -70,7 +76,7 @@ export default function Chat(){
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({message: userQuery})
+          body: JSON.stringify({message: userQuery, district: selectedDistrict})
         });
 
         if(!response.ok) throw new Error('서버 에러가 발생하였습니다');
@@ -88,13 +94,15 @@ export default function Chat(){
           sender: 'ai'
         }));
 
-        // 지도 표시 여부, 장소 목록 redux 반영
-        if(typeof data.show_map === 'boolean'){
-          dispatch(setShowMap(data.show_map || isLocationQuery));
-        }
-
         // array인지 확인
         if(Array.isArray(data.places)){
+          // 위치 이동, 장소 추천이 아니여도 키워드가 있어 지도를 띄움
+          if(typeof data.show_map === 'boolean'){
+            // isLocationQuery 은 일단 비활성화 -> 장소를 추천해줘도 띄우지 못하는 경우 발생
+            // 모바일에서는 답변을 먼저 읽고, 헤더나 마지막 답변의 버튼으로 지도를 연다.
+            const isMobile = window.matchMedia('(max-width: 1024px)').matches;
+            dispatch(setShowMap(data.show_map && !isMobile));
+          }
           dispatch(setPlaces(data.places || []));
         }
       }catch(e){
@@ -108,12 +116,12 @@ export default function Chat(){
         }));
 
         // 내가 추가 [필요한지 아닌지는 모름]
-        // dispatch(setShowMap(false));
-        // dispatch(setPlaces([]));
+        dispatch(setShowMap(false));
+        dispatch(setPlaces([]));
       }finally{
         dispatch(setIsLoading(false));
       }
-  }, [inputText, dispatch]);
+  }, [inputText, isLoading, dispatch]);
 
   /* 
     useCallback 훅 적용
@@ -125,251 +133,238 @@ export default function Chat(){
 
   return (
     <>
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#0a0e17] via-[#111827] to-[#0d111a] p-0 sm:p-6 font-sans text-slate-200">
-      
-        {/* 메인 컨테이너: 글래스모피즘(반투명 유리 + 블러 + 미세한 보더/그림자) 적용 */}
-        <div className="w-full h-screen sm:h-[90vh] bg-[#131b2e]/70 backdrop-blur-2xl shadow-2xl rounded-none sm:rounded-2xl flex flex-col overflow-hidden max-w-[1400px] border border-white/10 ring-1 ring-white/5">
-          
-          {/* 상단바: 글래스 룩 적용 */}
-          <header className="flex flex-wrap justify-between items-center px-6 py-4 bg-[#17223b]/60 backdrop-blur-md text-slate-100 shrink-0 gap-4 shadow-sm border-b border-white/5">
-            <div className="flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-[#1e2c4f]/80 backdrop-blur-md flex items-center justify-center shadow-inner text-[#fde047] text-xl border border-white/10">
-                <FaRobot />
-              </div>
-              <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-[#fde047] flex items-center gap-2 drop-shadow-sm">
-                  AI <span className="text-white text-xl font-bold">로컬 어시스턴트</span>
-                </h1>
-                <p className="text-xs text-slate-400">지역 맞춤형 맛집 및 학원 추천 플랫폼</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {/* 지역 선택 셀렉트 */}
-              <div className="flex items-center space-x-2 bg-[#131b2e]/80 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-inner cursor-pointer border border-white/10">
-                <FaMapMarkerAlt className="text-red-400 text-xs" />
-                <span className="text-xs text-slate-400">지역:</span>
-                <select 
-                  value={selectedDistrict}
-                  onChange={(e) => dispatch(setSelectedDistrict(e.target.value))}
-                  className="bg-transparent text-xs font-semibold text-[#fde047] focus:outline-none cursor-pointer"
-                >
-                  <option value="노원구" className="bg-[#131b2e] text-white">노원구</option>
-                  <option value="도봉구" className="bg-[#131b2e] text-white">도봉구</option>
-                  <option value="강북구" className="bg-[#131b2e] text-white">강북구</option>
-                  <option value="중랑구" className="bg-[#131b2e] text-white">중랑구</option>
-                  <option value="성북구" className="bg-[#131b2e] text-white">성북구</option>
+      <div id="wrap" className="chat-page">
+        <header>
+          <div className='brand'>
+            <img src="/avatar.png" alt="누비니" />
+            누비니
+          </div>
+          <div className='header-actions'>
+            <div className='area'>
+              <svg className='map-icon' viewBox="0 0 24 24">
+                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path>
+                <circle cx="12" cy="10" r="2.5"></circle>
+              </svg>
+              {/* 지역 */}
+              <div className='city'>
+                <select name="area" className="area-select" value={selectedDistrict} onChange={(e) => dispatch(setSelectedDistrict(e.target.value))}>
+                  <option value="노원구">노원구</option>
+                  <option value="도봉구">도봉구</option>
+                  <option value="강북구">강북구</option>
+                  <option value="중랑구">중랑구</option>
+                  <option value="성북구">성북구</option>
                 </select>
-              </div>
-
-              {/* 상태 배지 */}
-              <div className="text-xs bg-[#1e2c4f]/80 backdrop-blur-md text-[#fde047] px-3.5 py-2 rounded-2xl font-semibold shadow-inner hidden sm:flex items-center gap-2 border border-white/10">
-                <FaMap className="text-xs text-[#fde047]" />
-                <span>{showMap ? "지도 연동 활성화" : "AI 대화 모드"}</span>
+                <svg viewBox="0 0 28 28"><path d="m6 12 6 6 6-6"></path></svg>
               </div>
             </div>
-          </header>
+            <button
+              className={`map-toggle ${showMap ? 'on' : ''}`}
+              type="button"
+              onClick={() => dispatch(setShowMap(!showMap))}
+              disabled={!showMap && !hasMapData}
+              aria-expanded={showMap}
+              aria-controls="map-panel"
+              title={!showMap && !hasMapData ? '장소를 추천받으면 지도를 열 수 있어요.' : undefined}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16" />
+              </svg>
+              {showMap ? '지도 닫기' : '지도 보기'}
+            </button>
+          </div>
+        </header>
+        <section className={`chat-layout ${showMap ? 'map-open' : ''}`}>
+          <article className={`chat ${showMap ? 'on' : ''}`}>
+            <div className='message'>
+              <div className='banner'>
+                <img src="/banner.png" alt="banner" />
+                <div className='copy'>
+                  <h1>
+                    우리 동네의<br/> 좋은 장소를 <strong>누비니</strong>와 함께 찾아보세요
+                  </h1>
+                  <p>
+                    선택한 지역의 맛집, 카페, 학원, 문화시설까지<br/>
+                    원하는 장소를 대화로 편하게 찾아보세요
+                  </p>
+                </div>
+              </div>
 
-          {/* 중앙 바디 영역 */}
-          <div className="flex-1 flex flex-col sm:flex-row overflow-hidden relative">
-                
-                {/* 1) 채팅 영역 */}
-                <div className={`flex-1 flex flex-col h-full overflow-hidden bg-[#0f172a]/50 backdrop-blur-sm transition-all duration-300 ${
-                  showMap ? "sm:w-1/2 sm:border-r sm:border-white/5" : "w-full"
-                } ${mobileView === "map" && showMap ? "hidden sm:flex" : "flex"}`}>
-                  
-                  {/* 대화 내용 스크롤 박스 */}
-                  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                    {message.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex items-end space-x-2 ${
-                          msg.sender === "user" ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        {msg.sender === "ai" && (
-                          <div className="w-9 h-9 rounded-2xl bg-[#1e2c4f]/80 backdrop-blur-md flex items-center justify-center shrink-0 shadow-md text-slate-200 border border-white/10">
-                            <FaRobot size={16} />
-                          </div>
-                        )}
-
-                        <div
-                          className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm sm:text-base leading-relaxed shadow-lg backdrop-blur-md ${
-                            msg.sender === "user"
-                              ? "bg-[#2563eb]/90 text-white rounded-br-none shadow-blue-900/30 border border-blue-400/20"
-                              : "bg-[#17223b]/80 text-slate-200 rounded-bl-none shadow-md border border-white/10"
-                          }`}
-                        >
-                          <div className="prose prose-invert prose-sm max-w-none">
-                            <ReactMarkdown>{msg.text}</ReactMarkdown>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {isLoading && (
-                      <div className="flex items-end space-x-2 justify-start">
-                        <div className="w-9 h-9 rounded-2xl bg-[#1e2c4f]/80 backdrop-blur-md flex items-center justify-center shrink-0 text-slate-200 border border-white/10">
-                          <FaRobot size={16} />
-                        </div>
-                        <div className="bg-[#17223b]/80 backdrop-blur-md px-4 py-3 rounded-2xl rounded-bl-none shadow-md flex items-center space-x-2 border border-white/10">
-                          <div className="w-2.5 h-2.5 bg-[#fde047] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                          <div className="w-2.5 h-2.5 bg-[#fde047] rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                          <div className="w-2.5 h-2.5 bg-[#fde047] rounded-full animate-bounce"></div>
-                          <span className="text-xs text-slate-300 ml-1 font-medium">최적의 장소 분석 중...</span>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={messagesEndref} />
-                  </div>
-
-                  {/* 하단 입력 폼 */}
-                  <div className="p-4 bg-[#131b2e]/60 backdrop-blur-md flex items-center space-x-3 shrink-0 shadow-inner border-t border-white/5">
-                    <input
-                      type="text"
-                      className="flex-1 bg-[#0d111a]/80 backdrop-blur-md rounded-2xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fde047] transition shadow-inner border border-white/10"
-                      placeholder={`${selectedDistrict} 맛집이나 학원을 물어보세요...`}
-                      value={inputText}
-                      onChange={(e) => dispatch(setInputText(e.target.value))}
-                      onKeyPress={handleKeyPress}
-                    />
-                    {/* 노란색 계열 전송 버튼 */}
-                    <button
-                      onClick={handleSend}
-                      disabled={isLoading}
-                      className="bg-[#fde047] hover:bg-[#facc15] disabled:bg-slate-800 text-slate-950 px-6 py-3 rounded-2xl text-sm font-bold transition shadow-md cursor-pointer shrink-0"
-                    >
-                      전송
+              {/* 아무것도 입력 안했을 시 예시 */}
+              {message.length <= 0 ? (
+                <div className='chat-welcome'>
+                  <img src="/avatar.png" alt="누비니" />
+                  <h3>
+                    안녕하세요! <strong>누비니</strong>예요. <br/>
+                    오늘은 어떤 장소를 찾고 계신가요?
+                  </h3>
+                  <p>
+                    지역을 선택하고 원하는 조건을 말해 주세요! <br/>
+                    새로운 장소를 함께 찾아드릴게요!
+                  </p>
+                  <div className='help-button'>
+                    <button type="button" onClick={() => handleSend('점심 메뉴 추천해줘!')}>
+                      <svg viewBox="0 0 24 24"><path d="M4 3v7c0 2 4 2 4 0V3M6 3v18M17 3c-3 4-4 8-4 11h4v7"></path></svg>
+                      점심 메뉴 추천
+                    </button>
+                    <button type="button" onClick={() => handleSend('조용한 카페 추천해줘!')}>
+                      <svg viewBox="0 0 24 24"><path d="M3 8h13v7a6 6 0 0 1-12 0V8ZM16 9h2a3 3 0 1 1 0 6h-2"></path><path d="M8 2v3m4-3v3"></path></svg>
+                      조용한 카페 찾기
+                    </button>
+                    <button type="button" onClick={() => handleSend('근처 수학 학원 추천해줘!')}>
+                      <svg viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5L2 9Z"></path><path d="M6 11v5c4 3 8 3 12 0v-5M22 9v7"></path></svg>
+                      근처 수학 학원
                     </button>
                   </div>
                 </div>
+              ) : (
+                <></>
+              )}
 
-                {/* 2) 다음맵 배경 + 토스트 카드 영역 */}
-                {showMap && (
-                  <div className={`w-full sm:w-1/2 h-full relative flex flex-col overflow-hidden bg-[#0d111a]/60 ${
-                    mobileView === "chat" && showMap ? "hidden sm:flex" : "flex"
-                  }`}>
+              {message.map((msg) => (
+                <Fragment key={msg.id}>
+                  <div className={`chat-result ${msg.sender === 'ai' ? 'ai' : 'user'}`}>
                     
-                    {/* 배경 지도 시뮬레이션 레이어 */}
-                    <div className="absolute inset-0 bg-[#0a0e17]/80 backdrop-blur-sm flex flex-col items-center justify-center overflow-hidden">
-                      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1.5px,transparent_1.5px)] [background-size:28px_28px]"></div>
-                      <div className="text-blue-400/80 text-6xl mb-3 animate-pulse">🗺️</div>
-                      <p className="text-xs text-blue-300/80 font-mono tracking-widest bg-[#131b2e]/80 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/10">
-                        [ Kakao Map Interactive Layer Active ]
-                      </p>
-                    </div>
-
-                    {/* 상단 컨트롤: 지도 아이콘 + 애니메이션 닫기 버튼 */}
-                    <div className="relative z-10 p-4 bg-[#131b2e]/80 backdrop-blur-md flex justify-between items-center shadow-md border-b border-white/5">
-                      <div className="flex items-center space-x-2 bg-[#0f172a]/80 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-inner border border-white/10">
-                        <FaMap className="text-blue-400 text-xs" />
-                        <span className="text-xs font-bold text-white">{selectedDistrict} 추천 장소 지도</span>
+                    {msg.sender === 'ai' && (
+                      <div className='chat-icon'>
+                        <img src="/avatar.png" alt="ai" />
                       </div>
+                    )}
 
-                      <button
-                        onClick={() => dispatch(setShowMap(false))}
-                        className="group flex items-center space-x-2 bg-[#1e2c4f]/80 backdrop-blur-md hover:bg-red-500/20 hover:text-red-400 text-slate-200 px-3.5 py-2 rounded-2xl text-xs font-medium transition-all duration-300 cursor-pointer shadow-md transform active:scale-95 border border-white/10"
-                      >
-                        <FaMap className="text-blue-400 text-sm group-hover:rotate-12 transition-transform duration-300" />
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[100px] transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100">
-                          지도 닫기
-                        </span>
-                        <FaTimes className="text-sm transition-transform duration-300 group-hover:rotate-90" />
-                      </button>
-                    </div>
-
-                    {/* 토스트 스타일 장소 카드 리스트 */}
-                    <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3">
-                      <div className="flex space-x-3 p-3 bg-[#131b2e]/80 backdrop-blur-md rounded-2xl text-xs text-slate-300 shadow-lg border border-white/10">
-                        <div className="flex items-center space-x-1.5">
-                          <span>🔵</span>
-                          <span className="font-semibold text-blue-300">공식 등록</span>
-                        </div>
-                        <div className="flex items-center space-x-1.5">
-                          <span>🟠</span>
-                          <span className="font-semibold text-[#fde047]">AI 추천/미등록</span>
-                        </div>
-                      </div>
-
-                      {places.length > 0 ? (
-                        places.map((place, index) => (
-                          <div 
-                            key={index} 
-                            className="p-4 bg-[#17223b]/80 backdrop-blur-md rounded-2xl shadow-xl hover:bg-[#17223b]/95 transition flex items-start space-x-3 text-left group cursor-pointer border border-white/10"
-                          >
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-base shadow-md border border-white/10 ${
-                              place.is_registered
-                                ? "bg-blue-500/20 text-blue-300"
-                                : "bg-amber-500/20 text-[#fde047]"
-                            }`}>
-                              {place.is_registered ? "🔵" : "🟠"}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <h4 className="font-bold text-white text-sm truncate group-hover:text-[#fde047] transition">
-                                  {place.name}
-                                </h4>
-                                <span className={`text-[10px] px-2.5 py-0.5 rounded-2xl font-semibold shrink-0 border border-white/10 ${
-                                  place.is_registered
-                                    ? "bg-blue-500/20 text-blue-300"
-                                    : "bg-amber-500/20 text-[#fde047]"
-                                }`}>
-                                  {place.is_registered ? "공식 등록" : "커스텀 추천"}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-400 mt-1 truncate">
-                                📍 {place.address} ({place.category})  
-                              </p>
-                              <p className="text-xs text-slate-200 mt-2 bg-[#0f172a]/80 backdrop-blur-sm p-2.5 rounded-2xl shadow-inner leading-relaxed border border-white/5">
-                                {place.description}
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="h-40 flex flex-col items-center justify-center text-center text-slate-400 bg-[#131b2e]/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/10">
-                          <div className="text-3xl mb-2">🔍</div>
-                          <p className="text-xs text-slate-300">
-                            선택하신 지역의 장소 데이터를 불러오는 중이거나 표시할 항목이 없습니다.
-                          </p>
-                        </div>
+                    <div className='chat-bubble'>
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{msg.text.replace(/\\n/g, '\n')}</ReactMarkdown>
+                      {/* 지도 이력은 저장하지 않고, 현재 장소 데이터가 있는 마지막 답변에만 표시한다. */}
+                      {msg.sender === 'ai' && msg.id === message[message.length - 1]?.id && hasMapData && !isLoading && (
+                        <button
+                          className='mobile-map-button'
+                          type="button"
+                          onClick={() => dispatch(setShowMap(true))}
+                          aria-expanded={showMap}
+                          aria-controls="map-panel"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16" />
+                          </svg>
+                          지도 보기
+                        </button>
                       )}
                     </div>
+
+                    {msg.sender === 'user' && (
+                      <div className='chat-icon'>
+                        <svg viewBox="0 0 24 24">
+                          <circle cx="12" cy="6" r="5"></circle>
+                          <path d="M4 21v-2a8 8 0 0 1 16 0v2"></path>
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                )}
+                </Fragment>
+              ))}
 
-          </div>
-        </div>
-
-        {/* 모바일 전용 플로팅 토글 버튼 */}
-        {showMap && (
-          <div className="fixed bottom-6 right-6 z-50 sm:hidden">
-            <button
-              onClick={() => dispatch(setMobileView(mobileView === "chat" ? "map" : "chat"))}
-              className="bg-[#fde047] hover:bg-[#facc15] text-slate-950 px-5 py-3 rounded-2xl font-bold shadow-2xl flex items-center space-x-2 text-sm active:scale-95 transition cursor-pointer backdrop-blur-md"
-            >
-              {mobileView === "chat" ? (
-                <>
-                  <FaMap className="text-slate-950" />
-                  <span>지도 보기</span>
-                  <span className="w-2 h-2 rounded-2xl bg-blue-600 animate-ping"></span>
-                </>
-              ) : (
-                <>
-                  <span>💬 채팅 보기</span>
-                  {message.length > 0 && (
-                    <span className="bg-slate-950 text-[#fde047] w-5 h-5 rounded-2xl text-xs flex items-center justify-center font-extrabold shadow-md">
-                      {message.length}
-                    </span>
-                  )}
-                </>
+              {isLoading && (
+                <div className='ai chat-result'>
+                  <div className='chat-icon'>
+                    <img src="/avatar.png" alt="ai" />
+                  </div>
+                  <div className='chat-bubble' role="status">
+                    답변 작성 중<span className="loading-dots" aria-hidden="true">...</span>
+                  </div>
+                </div>
               )}
-            </button>
-          </div>
-        )}
 
+              <div ref={messagesEndref} />
+            </div>
+            <form className='submit-form' onSubmit={(e: React.FormEvent) => e.preventDefault()}>
+              <input 
+                type="text" 
+                className='question' 
+                name="question" 
+                placeholder='궁금한 장소나 조건을 입력해보세요. 예) 분위기 좋은 카페'
+                value={inputText}
+                onChange={(e) => dispatch(setInputText(e.target.value))}
+                onKeyPress={handleKeyPress} 
+                autoComplete='false'
+              />
+              <button 
+                type="button"
+                onClick={() => handleSend()}
+                disabled={isLoading}
+              >
+                <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+              </button>
+            </form>
+          </article>
+          {/* 닫는 애니메이션이 끝날 때까지 유지할 수 있도록 CSS로 표시 여부를 제어한다. */}
+          <article
+            id="map-panel"
+            className={`map map-panel ${showMap ? 'on' : ''}`}
+            aria-labelledby="map-title"
+            aria-hidden={!showMap}
+            inert={!showMap}
+          >
+            <div className='map-heading'>
+              <h2 id="map-title">
+                <svg className='map-panel-icon' viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16" />
+                </svg>
+                추천 장소 지도
+              </h2>
+              <button
+                className='map-close'
+                type="button"
+                aria-label="지도 닫기"
+                onClick={() => dispatch(setShowMap(false))}
+              >
+                <svg className='map-panel-icon' viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M6 18 18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className='map-body'>
+              <div className='map-legend'>
+                <span><i aria-hidden="true" />공식 등록</span>
+                <span><i className='unregistered' aria-hidden="true" />AI 추천/미등록</span>
+              </div>
+
+              {/* 실제 지도는 추후 연결하고, 현재는 빈 영역으로 둔다. */}
+              <div className='map-canvas' aria-label="지도 표시 영역" />
+
+              <div className='results-heading'>
+                <h3>추천 장소 <span className='result-count'>{places.length}</span></h3>
+              </div>
+
+              <div className='place-list'>
+                {places.map((place, index) => (
+                  <div className='place-card' key={`${place.name}-${place.address}-${index}`}>
+                    <span className={`place-number ${place.is_registered ? '' : 'unregistered'}`}>
+                      {index + 1}
+                    </span>
+                    <div className='place-info'>
+                      <div className='place-top'>
+                        <h4>{place.name}</h4>
+                        <span className={`place-badge ${place.is_registered ? '' : 'unregistered'}`}>
+                          {place.is_registered ? '공식 등록' : 'AI 추천/미등록'}
+                        </span>
+                      </div>
+                      <p className='place-address'>
+                        <svg className='map-panel-icon' viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                          <circle cx="12" cy="10" r="2.5" />
+                        </svg>
+                        {place.address}
+                      </p>
+                      {place.description && <p className='place-description'>{place.description}</p>}
+                    </div>
+                  </div>
+                ))}
+                {places.length === 0 && <p className='places-empty'>추천 장소가 아직 없어요.</p>}
+              </div>
+            </div>
+          </article>
+        </section>
       </div>
     </>
   )
 }
+
