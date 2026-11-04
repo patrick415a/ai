@@ -1,5 +1,5 @@
 // redux toolkit을 사용하여 챗봇의 전역 상태(state)와 액션(actions)을 정의하는 파일
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // 메시지 데이터 타입 정의
 interface Message {
@@ -18,6 +18,10 @@ export interface PlaceInfo {
   description: string;
 }
 
+export interface PlaceSelection {
+  index: number;
+}
+
 // 챗봇이 관리할 전체 상태의 형태 정의
 interface ChatState {
   message: Message[],
@@ -25,6 +29,7 @@ interface ChatState {
   isLoading: boolean;
   showMap: boolean;
   places: PlaceInfo[];
+  selectedPlace: PlaceSelection | null;
   mobileView: "chat" | "map";
   selectedDistrict: string;
 }
@@ -44,6 +49,7 @@ const initialState: ChatState = {
   isLoading: false,
   showMap: false,
   places: [],
+  selectedPlace: null,
   mobileView: "chat",
   selectedDistrict: "노원구"
 }
@@ -65,7 +71,15 @@ export const chatSlice = createSlice({
       state.showMap = action.payload
     },
     setPlaces: (state, action:PayloadAction<PlaceInfo[]>) => {
-      state.places = action.payload
+      state.places = action.payload;
+      state.selectedPlace = null;
+    },
+    setSelectedPlace: (state, action:PayloadAction<number | null>) => {
+      const index = action.payload;
+      // 같은 카드를 다시 눌러도 닫힌 장소 정보를 다시 열 수 있게 새 선택 객체를 만든다.
+      state.selectedPlace = index !== null && Number.isInteger(index) && index >= 0 && index < state.places.length
+        ? { index }
+        : null;
     },
     setMobileView: (state, action:PayloadAction<"chat" | "map">) => {
       state.mobileView = action.payload
@@ -80,7 +94,7 @@ export const chatSlice = createSlice({
   }
 })
 
-export const { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setMobileView, setSelectedDistrict } = chatSlice.actions;
+export const { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setSelectedPlace, setMobileView, setSelectedDistrict } = chatSlice.actions;
 
 // 스토어 등록을 위한 리듀서 내보내기
 export default chatSlice.reducer;

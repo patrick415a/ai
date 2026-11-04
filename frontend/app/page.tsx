@@ -3,9 +3,11 @@
 import React, { useRef, useEffect, useCallback, Fragment } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setMobileView, setSelectedDistrict } from '@/store/chatSlice';
+import { setInputText, setIsLoading, setShowMap, addMessage, setPlaces, setSelectedPlace, setMobileView, setSelectedDistrict } from '@/store/chatSlice';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks'; // 줄바꿈 해주는 라이브러리
+import KakaoMap from '@/components/KakaoMap';
+import { hasValidCoordinates } from '@/lib/kakao-map';
 import '@/assets/main.styles.scss'
 
 // 무조건 시간 관련된 건 템포럴로
@@ -16,12 +18,20 @@ export default function Chat(){
   const dispatch = useDispatch<AppDispatch>();
 
   // redux 스토어의 상태(state)를 안전하게 구독(select)하여 가져오기
-  const { message, inputText, isLoading, showMap, places, mobileView, selectedDistrict } = useSelector((state:RootState) => state.chat);
+  const { message, inputText, isLoading, showMap, places, selectedPlace, mobileView, selectedDistrict } = useSelector((state:RootState) => state.chat);
 
   // showMap은 패널의 열림 여부, places는 다시 열어 보여줄 데이터가 있는지를 나타낸다.
   const hasMapData = places.length > 0;
 
   const messagesEndref = useRef<HTMLDivElement>(null);
+
+  const handlePlaceSelect = useCallback((index: number | null) => {
+    dispatch(setSelectedPlace(index));
+  }, [dispatch]);
+
+  const handlePlaceCardClick = (index: number) => {
+    handlePlaceSelect(selectedPlace?.index === index ? null : index);
+  };
 
   // 새 메시지가 추가 될 때마다 가장 최신 메시지를 아래로 부드럽게 스크롤 이동
   useEffect(() => {
@@ -121,7 +131,7 @@ export default function Chat(){
       }finally{
         dispatch(setIsLoading(false));
       }
-  }, [inputText, isLoading, dispatch]);
+  }, [inputText, isLoading, dispatch, selectedDistrict]);
 
   /* 
     useCallback 훅 적용
@@ -327,8 +337,12 @@ export default function Chat(){
                 <span><i className='unregistered' aria-hidden="true" />AI 추천/미등록</span>
               </div>
 
-              {/* 실제 지도는 추후 연결하고, 현재는 빈 영역으로 둔다. */}
-              <div className='map-canvas' aria-label="지도 표시 영역" />
+              <KakaoMap
+                places={places}
+                isVisible={showMap}
+                selectedPlace={selectedPlace}
+                onPlaceSelect={handlePlaceSelect}
+              />
 
               <div className='results-heading'>
                 <h3>추천 장소 <span className='result-count'>{places.length}</span></h3>
@@ -336,7 +350,24 @@ export default function Chat(){
 
               <div className='place-list'>
                 {places.map((place, index) => (
-                  <div className='place-card' key={`${place.name}-${place.address}-${index}`}>
+                  <div
+                    className={`place-card${selectedPlace?.index === index ? ' is-selected' : ''}`}
+                    key={`${place.name}-${place.address}-${index}`}
+                    role="button"
+                    tabIndex={hasValidCoordinates(place) ? 0 : -1}
+                    aria-label={`${index + 1}. ${place.name} 지도에서 보기`}
+                    aria-pressed={selectedPlace?.index === index}
+                    aria-disabled={!hasValidCoordinates(place)}
+                    onClick={() => {
+                      if (hasValidCoordinates(place)) handlePlaceCardClick(index);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        if (hasValidCoordinates(place)) handlePlaceCardClick(index);
+                      }
+                    }}
+                  >
                     <span className={`place-number ${place.is_registered ? '' : 'unregistered'}`}>
                       {index + 1}
                     </span>

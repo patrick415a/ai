@@ -619,11 +619,112 @@ body {
   }
 
   .map-canvas {
+    position: relative;
     height: 240px;
     overflow: hidden;
     border: 1px solid #e2e9e4;
     border-radius: 14px;
     background-color: #f1f3f4;
+  }
+
+  .kakao-map-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-status {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 16px;
+    background: #f1f3f4;
+    color: #627087;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .map-status-notice {
+    top: auto;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    pointer-events: none;
+  }
+
+  .kakao-place-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    // 꼬리까지 버튼 높이에 포함해 아래쪽 중앙 끝이 장소 좌표에 닿도록 한다.
+    height: 40px;
+    box-sizing: border-box;
+    padding: 0 0 8px;
+    border: none;
+    // 원과 꼬리를 하나의 SVG 윤곽으로 그려 테두리가 끊기거나 겹치지 않게 한다.
+    background: transparent url('/map-marker-registered.svg') center / 32px 40px no-repeat;
+    filter: drop-shadow(0 2px 3px #0003);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+
+    .kakao-place-marker-label {
+      position: absolute;
+      inset: 0 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    &.unregistered {
+      background-image: url('/map-marker-unregistered.svg');
+    }
+
+    &.is-selected {
+      filter: drop-shadow(0 0 3px #014a39) drop-shadow(0 3px 4px #0004);
+    }
+
+    &:focus-visible {
+      outline: 3px solid #014a39;
+      outline-offset: 2px;
+    }
+  }
+
+  .kakao-place-info {
+    width: 210px;
+    padding: 14px 24px 14px 14px;
+    color: #192539;
+    font-family: 'Suit', sans-serif;
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    strong {
+      font-size: 14px;
+    }
+
+    p {
+      margin: 6px 0;
+      color: #627087;
+      line-height: 1.5;
+    }
+
+    a {
+      color: #087a4e;
+      text-decoration: underline;
+    }
   }
 
   .results-heading {
@@ -668,6 +769,26 @@ body {
     border: 1px solid #e4e9ec;
     border-radius: 13px;
     background-color: #fff;
+    cursor: pointer;
+
+    &:hover:not([aria-disabled='true']) {
+      border-color: #8cbba0;
+    }
+
+    &.is-selected {
+      border-color: #087a4e;
+      background-color: #f0faf3;
+      box-shadow: inset 0 0 0 1px #087a4e;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #087a4e;
+      outline-offset: 2px;
+    }
+
+    &[aria-disabled='true'] {
+      cursor: default;
+    }
   }
 
   .place-number {
