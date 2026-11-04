@@ -192,6 +192,10 @@ async def chat_endpoint(request: ChatRequest):
 # source .venv/bin/activate
 # uvicorn main:app --reload --port 8000
 
+# 외부 접근 허용하게 하려면
+# allow_origins에 내부아이피 추가해야함
+# uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
 # pip install openai langchain langchain-openai python-dotenv
 
 # pip install groq
