@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from 'next/font/google'; // 폰트 적용
 
 // 불러온 스타일 적용
 // import 'mdb-react-ui-kit/dist/css/mdb.min.css';
@@ -8,9 +7,6 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import './globals.css';
 
 import ReduxProvider from "@/store/provider";
-
-// add
-const inter = Inter({ subsets:["latin"] });
 
 export const metadata: Metadata = {
   title: "누비니",

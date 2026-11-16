@@ -146,7 +146,7 @@ export default function Chat(){
       <div id="wrap" className="chat-page">
         <header>
           <div className='brand'>
-            <img src="/avatar.png" alt="누비니" />
+            <img src="./avatar.png" alt="누비니" />
             누비니
           </div>
           <div className='header-actions'>
@@ -187,7 +187,7 @@ export default function Chat(){
           <article className={`chat ${showMap ? 'on' : ''}`}>
             <div className='message'>
               <div className='banner'>
-                <img src="/banner.png" alt="banner" />
+                <img src="./banner.png" alt="banner" />
                 <div className='copy'>
                   <h1>
                     우리 동네의<br/> 좋은 장소를 <strong>누비니</strong>와 함께 찾아보세요
@@ -202,7 +202,7 @@ export default function Chat(){
               {/* 아무것도 입력 안했을 시 예시 */}
               {message.length <= 0 ? (
                 <div className='chat-welcome'>
-                  <img src="/avatar.png" alt="누비니" />
+                  <img src="./avatar.png" alt="누비니" />
                   <h3>
                     안녕하세요! <strong>누비니</strong>예요. <br/>
                     오늘은 어떤 장소를 찾고 계신가요?
@@ -236,7 +236,7 @@ export default function Chat(){
                     
                     {msg.sender === 'ai' && (
                       <div className='chat-icon'>
-                        <img src="/avatar.png" alt="ai" />
+                        <img src="./avatar.png" alt="ai" />
                       </div>
                     )}
 
@@ -274,7 +274,7 @@ export default function Chat(){
               {isLoading && (
                 <div className='ai chat-result'>
                   <div className='chat-icon'>
-                    <img src="/avatar.png" alt="ai" />
+                    <img src="./avatar.png" alt="ai" />
                   </div>
                   <div className='chat-bubble' role="status">
                     답변 작성 중<span className="loading-dots" aria-hidden="true">...</span>

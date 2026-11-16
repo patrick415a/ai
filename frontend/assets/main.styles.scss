@@ -666,7 +666,7 @@ body {
     padding: 0 0 8px;
     border: none;
     // 원과 꼬리를 하나의 SVG 윤곽으로 그려 테두리가 끊기거나 겹치지 않게 한다.
-    background: transparent url('/map-marker-registered.svg') center / 32px 40px no-repeat;
+    background: transparent url('../public/map-marker-registered.svg') center / 32px 40px no-repeat;
     filter: drop-shadow(0 2px 3px #0003);
     color: #fff;
     font-family: inherit;
@@ -689,7 +689,7 @@ body {
     }
 
     &.unregistered {
-      background-image: url('/map-marker-unregistered.svg');
+      background-image: url('../public/map-marker-unregistered.svg');
     }
 
     &.is-selected {
