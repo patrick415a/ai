@@ -66,7 +66,13 @@ app = FastAPI()
 # app에 cors 미들웨어를 추가
 app.add_middleware(
     CORSMiddleware, # 사용할 미들웨어 종류 지정
-    allow_origins=["http://localhost:3000"], # 요청을 허용할 프론트 주소 목록 (ex. http://localhost:3000)
+    allow_origins=[
+        "http://localhost:3000",
+        "http://heartbreakkid.co.kr",
+        "http://www.heartbreakkid.co.kr",
+        "https://heartbreakkid.co.kr",
+        "https://www.heartbreakkid.co.kr",
+    ],
     allow_credentials=True, # 쿠키나 인증정보(credentials)를 요청에 포함하는 것을 허용
     allow_methods=["*"], # 허용할 http메서드를 지정
     allow_headers=["*"], # 허용할 http 헤더를 지정
