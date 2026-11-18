@@ -6,6 +6,7 @@
     uvicorn: 서버를 실행 시켜주는 도구
     pydantic: 프론트엔드에서 넘어온 메시지 형식이 맞는지 검사
 '''
+import keyword
 
 from dotenv import load_dotenv
 
@@ -42,6 +43,8 @@ from pathlib import Path
 #
 from groq import Groq
 
+from kakao_search import search_kakao_places
+
 # 같은 폴더에 있는 걸 로드
 load_dotenv()
 
@@ -73,6 +76,8 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str # 사용자가 입력하는 채팅 메시지를 받는 필드 str은 문자열 텍스트 타입
     district: str # 사용자가 선택한 지역
+    previous_places: List[str] = []
+    previous_query: str = ""
 
 # 다음 카카오 맵의 마커 아이콘을 찍기 위해 개별 장소의 데이터 구조를 정의
 class PlaceInfo(BaseModel):
@@ -91,6 +96,49 @@ class ChatResponse(BaseModel):
     # 지도에 표시할 맛집/학원 장소들의 배열 데이터
     places: List[PlaceInfo] = []
 
+#Groq AI가 사용자 질문에서 장소 검색어 추출
+def extract_search_keyword(user_message):
+    try:
+        completion = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{
+                "role": "system",
+                "content": """
+                사용자의 질문을 분석하여 장소 검색어를 추출하세요.
+                
+                규칙:
+                1. 음식 종류가 있으면 해당 음식명을 추출하세요.
+                2. 카페, 학원 등 장소 종류도 추출하세요.
+                3. 특정 종류가 없으면 '맛집'을 사용하세요.
+                4. 불필요한 문장은 제거하세요.
+                5. 음식 종류를 임의로 변경하지 마세요.
+                6. 장소 추천 요청이 아니면 is_place_request를 false로 설정하세요.
+                
+                반드시 아래 JSON 형식으로 응답하세요.
+                
+                {
+                    "keyword": "검색어",
+                    "is_place_request": true
+                }
+                """
+            }, {
+                "role": "user",
+                "content": user_message
+            }],
+            temperature=0,
+            response_format={"type": "json_object"}
+        )
+
+        result = json.loads(completion.choices[0].message.content)
+
+        return result
+    except Exception as e:
+        print(f"검색어 추출 오류: {e}")
+        return {
+            "keyword": "",
+            "is_place_request": False
+        }
+
 '''
     /api/chat 경로로 post 요청이 들어왔을 때 실행 될 함수를 등록
 '''
@@ -100,6 +148,113 @@ async def chat_endpoint(request: ChatRequest):
     # request 객체에서 사용자가 보낸 메시지 텍스트만 꺼내 변수에 저장
     user_message = request.message
     user_district = request.district
+
+    print("[이전 검색 질문]", request.previous_query)
+    print("[이미 추천한 가게]", request.previous_places)
+
+    #이전 검색 조건 유지
+    is_another_request = any(
+        word in user_message
+        for word in ["다른", "더 추천", "새로운"]
+    )
+
+    search_message = user_message
+
+    if is_another_request and request.previous_query:
+        search_message = request.previous_query
+
+    #카카오 API에서 실제 장소 검색
+    places_from_kakao = []
+
+    #Groq AI가 질문을 분석해서 검색어 추출
+    search_info = extract_search_keyword(search_message)
+
+    keyword = search_info.get("keyword", "")
+    is_place_request = search_info.get("is_place_request", False)
+
+    import re
+
+    #검색어에서 역 이름 제거
+    keyword = re.sub(r"[가-힣]+역", "", keyword).strip()
+
+    #검색어가 비어있으면 기본 검색어 사용
+    if not keyword:
+        keyword = "맛집"
+
+    print(f"[검색어 확인] 질문={user_message}, 검색어={keyword}")
+
+    print(f"AI 검색 분석: {keyword}, 장소 검색: {is_place_request}")
+
+    try:
+        import re
+        match = re.search(r"([가-힣]+역)", search_message)
+        search_area = match.group(1) if match else user_district
+
+        if not is_place_request:
+            places_from_kakao = []
+
+        elif match:
+            station_results = search_kakao_places(search_area, 15)
+
+            station = next((
+                p for p in station_results
+                if p["name"] == search_area
+                or p["name"].startswith(search_area + " ")
+            ), None)
+
+            if not station:
+                return ChatResponse(
+                    reply=f"{search_area}의 위치를 찾지 못했어요.",
+                    show_map=False,
+                    places=[]
+                )
+
+            actual_district = next((
+                d for d in ["노원구", "도봉구", "중랑구", "강북구", "성북구"] if d in station["address"]
+            ), None)
+
+            if actual_district != user_district:
+                return ChatResponse(
+                    reply=(
+                        f"{search_area}은(는) "
+                        f"{actual_district or '다른 지역'}에 위치해 있어요! 😊\n\n"
+                        f"현재 선택하신 지역은 {user_district}입니다.\n\n"
+                        "상단에서 지역을 변경해 주세요."
+                    ),
+                    show_map=False, places=[]
+                )
+
+            places_from_kakao = search_kakao_places(
+                keyword, 15,
+                x=station["lng"],
+                y=station["lat"],
+                radius=1000
+            )
+
+            print(f"[카카오 검색어] {keyword}")
+
+            for place in places_from_kakao:
+                print(
+                    f"[검색 결과] {place['name']} | "
+                    f"{place['category']} | {place['address']}"
+                )
+
+        else:
+            places_from_kakao = search_kakao_places(
+                f"{user_district} {keyword}", 15
+            )
+
+        #선택한 지역에 있는 장소만 사용
+        #이전에 추천한 가게는 제외
+        previous_names = set(request.previous_places)
+
+        places_from_kakao = [
+            p for p in places_from_kakao
+            if user_district in p["address"]
+            and p["name"] not in previous_names
+        ][:3]
+    except Exception as e:
+        print(f"카카오 장소 검색 오류: {e}")
 
     system_prompt = (
         f"당신은 지역의 장소를 잘 아는 친절한 장소 추천 AI 에이전트 누비니입니다. 사용자가 선택한 지역은 {user_district} 입니다."
@@ -157,9 +312,20 @@ async def chat_endpoint(request: ChatRequest):
             model="openai/gpt-oss-120b",
             messages=[
                 # 1. 시스템 역할부여
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": system_prompt + """
+                [실제 장소 검색 규칙]
+                반드시 카카오 API 검색 결과에 포함된 장소만 추천하세요.
+                검색 결과에 없는 가게를 새로 만들어서는 안 됩니다.
+                장소의 이름, 주소, 위도, 경도를 임의로 변경하지 마세요.
+                """},
                 # 2. 사용자의 실제 질문 전달
-                {"role": "user", "content": user_message},
+                {"role": "user", "content": f"""
+                사용자 질문: {user_message}
+                
+                카카오 API 실제 검색 결과: {json.dumps(places_from_kakao, ensure_ascii=False)}
+                
+                위 검색 결과를 참고하여 답변해 주세요.
+                """},
             ],
             temperature=0.6,
             # json 형태로만 답하도록 설정
@@ -176,7 +342,32 @@ async def chat_endpoint(request: ChatRequest):
         # 파싱된 데이터에서 답변, 지도 표시여부, 장소 목록을 안전하게 꺼내기
         ai_reply = parsed_data.get("reply", "답변을 생성하지 못하였습니다")
         show_map_flag = parsed_data.get("show_map", False)
-        places_list = parsed_data.get("places", [])
+
+        if is_place_request and places_from_kakao:
+            show_map_flag = True
+            ai_reply = "추천 장소를 소개해 드릴게요! 😊\n\n"
+
+            for i, place in enumerate(places_from_kakao, 1):
+                ai_reply += (
+                    f"{i}. {place['name']}\n"
+                    f"위치: {place['address']}\n\n"
+                )
+
+        if is_place_request and not places_from_kakao:
+            ai_reply = (
+                "조건에 맞는 장소를 찾지 못했어요.\n\n"
+                "지역이나 역 이름을 확인해 주세요."
+            )
+            show_map_flag = False
+
+        #AI가 생성한 장소 정보는 사용하지 않음
+        #카카오 API에서 실제 검색된 장소만 지도에 표시
+        if show_map_flag and places_from_kakao:
+            places_list = places_from_kakao[:3]
+            show_map_flag = True
+        else:
+            places_list = []
+            show_map_flag = False
 
     except Exception as e:
         print(f"Groq AI 호출 중 에러 발생: {e}")

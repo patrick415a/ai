@@ -27,6 +27,11 @@ export default function Chat(){
 
   const messagesEndref = useRef<HTMLDivElement>(null);
 
+  //이전에 추천한 장소 기록
+  const recommendedPlacesRef = useRef<string[]>([]);
+  //마지막으로 검색했던 질문 기억
+  const lastSearchRef = useRef<string>('');
+
   const handlePlaceSelect = useCallback((index: number | null) => {
     dispatch(setSelectedPlace(index));
   }, [dispatch]);
@@ -88,12 +93,37 @@ export default function Chat(){
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({message: userQuery, district: selectedDistrict})
+          body: JSON.stringify({
+            message: userQuery, district: selectedDistrict,
+            previous_places: recommendedPlacesRef.current,
+            previous_query: lastSearchRef.current
+          })
         });
 
         if(!response.ok) throw new Error('서버 에러가 발생하였습니다');
         
         const data = await response.json();
+
+        //카카오에서 추천한 장소 기록
+        if (data.show_map && Array.isArray(data.places) && data.places.length > 0) {
+          const newNames = data.places.map(
+            (place: { name: string }) => place.name
+          );
+
+          recommendedPlacesRef.current = [
+            ...new Set([
+              ...recommendedPlacesRef.current,
+              ...newNames
+            ])
+          ];
+
+          //"다른 맛집" 요청이면 기존 검색 조건 유지
+          const isAnotherRequest = /다른|또 추천|새로운/.test(userQuery);
+
+          if (!isAnotherRequest) {
+            lastSearchRef.current = userQuery;
+          }
+        }
 
         // ai 응답 시점에 새로운 temporal 타임 스탬프를 생성하여 ID 중복 방지
         // sql에서 중복을 제거하는 대표적인 방법은 조회시 중복제거 distinct
