@@ -13,6 +13,8 @@ import '@/assets/main.styles.scss'
 // 무조건 시간 관련된 건 템포럴로
 import { Temporal } from '@js-temporal/polyfill';
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export default function Chat(){
   // redux 스토어에서 dispatch 함수 가져오기
   const dispatch = useDispatch<AppDispatch>();
@@ -81,7 +83,7 @@ export default function Chat(){
       // dispatch(setShowMap(isLocationQuery));
 
       try {
-        const response = await fetch('http://localhost:8000/api/chat', {
+        const response = await fetch(`${apiBaseUrl}/api/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
